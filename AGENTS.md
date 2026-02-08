@@ -17,6 +17,7 @@ Instructions:
 |no-emojis|Never use emojis in code, docs, or communication.
 |security|No secrets in code. Use .env + pydantic-settings. Validate all inputs.
 |env-files|NEVER read .env files - only .env.example for schema reference
+|python-deps|When changing/adding Python dependencies, you MUST use `pdm` commands (e.g., `pdm add`), not directly edit `pyproject.toml`.
 
 ## Quality Checks|pre-commit-hooks
 Projects using these guidelines should enforce quality via pre-commit hooks:
@@ -50,18 +51,21 @@ This downloads the pre-commit config and installs all hooks automatically.
 |2|User Interview - ask questions until spec is 100% clear
 |3|Action Plan - step-by-step todos with testable checkpoints between phases
 |4|Approval Gate - wait for explicit "yes" before executing the plan
-|5|Execute - explain changes before applying, update docs/tech-context.md and README.md when done
+|5|Execute - after approval, write a temporary phased todo plan in docs/ with clear testable gates/checkpoints; only advance after gate pass; after each gate passes, commit changes (no pushes)
 
 ## Task Management
 |atomic-units|Break tasks into smallest testable pieces
 |todo-tracking|Use TodoWrite for 3+ steps. Mark complete immediately.
+|phase-plan-file|After plan approval, write the plan as a phased todo list in a temporary markdown file under docs/
+|phase-gates|Define explicit pass/fail gate criteria between phases and block next phase until pass
+|gate-commits|After each gate passes, create a commit (commit only, never push unless explicitly requested)
 |stop-when|Tests pass, feature works, code documented
 
 ## Documentation
 |source-of-truth|docs/tech-context.md - update when architecture changes
 |document-why|Explain decisions and tradeoffs, not just mechanics
 |data-flow|How data moves through components, entry to exit
-|no-proactive-docs|Never create README/docs unless explicitly requested
+|no-proactive-docs|Never create README/docs unless explicitly requested, except temporary docs phase-plan files required after approval
 
 ## Index (load on demand)
 |python|@instructions/python/{type-hints.md,pydantic.md,error-handling.md,ruff-rules.md,logging.md,testing.md}
