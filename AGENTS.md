@@ -72,7 +72,7 @@ This downloads the pre-commit config and installs all hooks automatically.
 |docker|@instructions/docker/{dockerfile.md,runtime-security.md,compose-template.md,network-isolation.md}
 |machine learning|@instructions/ml/{crisp-dm.md,data-splitting.md,leakage-prevention.md,evaluation.md,feature-importance.md,mlflow.md}
 |workflow|@instructions/workflow/{planning.md,task-management.md,documentation.md,pr-description.md,code-review.md}
-|tools|@instructions/tools/context7.md
+|tools|@instructions/tools/up-to-date-docs.md
 
 ## Refactoring
 |triggers|Hard to explain, DRY violation, security issue, pattern 3+ times
