@@ -18,6 +18,8 @@ Instructions:
 |security|No secrets in code. Use .env + pydantic-settings. Validate all inputs.
 |env-files|NEVER read .env files - only .env.example for schema reference
 |python-deps|When changing/adding Python dependencies, you MUST use `pdm` commands (e.g., `pdm add`), not directly edit `pyproject.toml`.
+|tech-context|MANDATORY: docs/tech-context.md is the Single-File Memory Bank consolidating Cline's core files. Reference: https://docs.cline.bot/prompting/cline-memory-bank#what-is-the-cline-memory-bank
+|ml-reporting|MANDATORY: ML projects must include a CRISP-DM Build Report in docs/tech-context.md. Each phase documented with STAR (Situation, Task, Action, Result) including how/why/what/where for all metrics and tradeoffs.
 
 ## Quality Checks|pre-commit-hooks
 Projects using these guidelines should enforce quality via pre-commit hooks:
@@ -62,9 +64,10 @@ This downloads the pre-commit config and installs all hooks automatically.
 |stop-when|Tests pass, feature works, code documented
 
 ## Documentation
-|source-of-truth|docs/tech-context.md - update when architecture changes
+|source-of-truth|docs/tech-context.md - Single-File Memory Bank consolidating Project Brief, Product Context, System Patterns, Tech Context. Mandatory for all projects.
 |document-why|Explain decisions and tradeoffs, not just mechanics
 |data-flow|How data moves through components, entry to exit
+|depth-over-brevity|docs/tech-context.md must be a DEEP technical report. Size is not a problem; shallowness is. For every metric, explain: calculation method, why chosen, observed values.
 |no-proactive-docs|Never create README/docs unless explicitly requested, except temporary docs phase-plan files required after approval
 
 ## Index (load on demand)

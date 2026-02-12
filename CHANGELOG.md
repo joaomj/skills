@@ -2,6 +2,39 @@
 
 All notable changes to the OpenCode Agent Guidelines.
 
+## [2.3.0] - 2026-02-11
+
+### Added
+
+- **Single-File Memory Bank** (AGENTS.md, documentation.md)
+  - `|tech-context|` rule: `docs/tech-context.md` is mandatory Single-File Memory Bank
+  - Consolidates Cline Memory Bank core files: Project Brief, Product Context, System Patterns, Tech Context
+  - Reference: https://docs.cline.bot/prompting/cline-memory-bank
+
+- **ML Build Report** (AGENTS.md, documentation.md)
+  - `|ml-reporting|` rule: ML projects must include CRISP-DM Build Report in `docs/tech-context.md`
+  - Each of 6 CRISP-DM phases documented with STAR (Situation, Task, Action, Result) methodology
+  - All metrics require HOW, WHY, WHAT, WHERE documentation
+
+- **Deep Technical Report Requirement** (documentation.md)
+  - `docs/tech-context.md` must be a deep technical report
+  - Size is not a problem; shallowness is
+  - For every metric: explain calculation method (HOW), rationale (WHY), observed values (WHAT), location (WHERE)
+
+### Changed
+
+- **AGENTS.md**
+  - Added `|tech-context|` core principle for mandatory Single-File Memory Bank
+  - Added `|ml-reporting|` core principle for ML projects
+  - Updated Documentation section with depth-over-brevity rule
+
+- **Documentation Guidelines** (`instructions/workflow/documentation.md`)
+  - Added Single-File Memory Bank structure definition
+  - Added 4 required sections for `docs/tech-context.md`
+  - Added ML-only Build Report section with CRISP-DM + STAR template
+  - Updated Core Principle to include HOW/WHY/WHAT/WHERE requirement
+  - Updated Documentation Checklist with new compliance items
+
 ## [2.2.0] - 2025-02-04
 
 ### Added
