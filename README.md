@@ -4,7 +4,24 @@ A Vercel-style knowledge base for AI coding agents, optimized for software engin
 
 ## Philosophy
 
-This repository follows the [Vercel research finding](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) that **passive context outperforms active skill invocation**. Instead of hoping agents remember to load skills, we embed a compressed index that is always available, then retrieve specific instructions on demand.
+This repository follows [Vercel research finding](https://vercel.com/blog/agents-md-outperforms-skills-in-our-agent-evals) that **passive context outperforms active skill invocation**. Instead of hoping agents remember to load skills, we embed a compressed index that is always available, then retrieve specific instructions on demand.
+
+## What's New in v2.4.0
+
+### Advanced Testing Guidelines
+- **Concurrency & Race Conditions**: Comprehensive testing strategies for threaded code, async operations, and race conditions using pytest-asyncio, threading, and pytest-xdist
+- **Property-Based Testing**: Introduction to Hypothesis for generating thousands of test cases automatically to verify invariants
+- **Integration vs Unit Test Framework**: Clear decision matrix for when to write integration tests vs mocked unit tests (15+ specific scenarios)
+- **Before/After Examples**: Concrete examples showing useless tests (heavy mocking) vs useful tests (catches real bugs like race conditions and payment declines)
+- **Test Data Management**: Strategies for realistic test data including factories, property-based generation, and edge case data sets
+
+### Dual Subagent Code Review Workflow
+- **Independent Parallel Reviews**: Two subagents review all changes independently for 85-95% issue coverage (vs 60-70% with single reviewer)
+- **Iterative Review Loop**: Fix, re-review, repeat until convergence or max 3 iterations
+- **Finding Merge Protocol**: Automatic deduplication and prioritization of issues from both subagents
+- **Termination Criteria**: Clear rules for when to stop (0 P1/P2 issues, max iterations, or diminishing returns)
+
+**Key Shift**: Tests should **find bugs**, not verify mock behavior. Reviews should **iteratively improve** code until convergence.
 
 ## How It Works
 
@@ -79,7 +96,7 @@ instructions/
 ## Directory Structure
 
 ### instructions/python/
-Type hints, Pydantic patterns, error handling, Ruff rules, structured logging, and testing guidelines for modern Python development.
+Type hints, Pydantic patterns, error handling, Ruff rules, structured logging, and comprehensive testing guidelines including concurrency, property-based testing, and integration test strategies.
 
 ### instructions/docker/
 Dockerfile security, runtime flags, compose templates, and network isolation strategies.
@@ -88,7 +105,7 @@ Dockerfile security, runtime flags, compose templates, and network isolation str
 CRISP-DM methodology, data splitting strategies, leakage prevention, evaluation metrics, feature importance, and MLflow tracking.
 
 ### instructions/workflow/
-Investigation workflows, task management with testable checkpoints, documentation guidelines, code review process, and PR templates.
+Investigation workflows, task management with testable checkpoints, documentation guidelines, dual subagent code review with iterative improvement, and PR templates.
 
 ### instructions/tools/
 Instructions for external APIs and tools (e.g., Context7 for library documentation).
