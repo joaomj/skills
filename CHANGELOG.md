@@ -2,6 +2,46 @@
 
 All notable changes to the OpenCode Agent Guidelines.
 
+## [2.4.0] - 2026-02-15
+
+### Added
+
+- **Advanced Testing Guidelines** (testing.md)
+  - **Concurrency & Race Conditions Testing**: Comprehensive section on testing threaded code, async operations, and race conditions using pytest-asyncio, threading, pytest-xdist, and freeze_time
+  - **Integration vs Unit Test Decision Framework**: Decision matrix table for when to write integration tests vs mocked unit tests with 15+ specific scenarios
+  - **Before/After Test Examples**: Concrete examples showing useless tests (heavy mocking, always pass) vs useful tests (catches real bugs like race conditions, payment declines)
+  - **Property-Based Testing Guidelines**: Introduction to Hypothesis with real-world examples for sorting, serialization, cache invariants, and concurrency testing
+  - **Test Data Management**: Strategies for realistic test data including factories, property-based generation, edge case data sets, data builders with chaining, and anti-patterns
+  - **Enhanced Test Quality Checklist**: Updated checklist with concurrency, integration testing, property-based testing, test data realism, and anti-mock criteria
+  - **Updated Test Metrics**: Added "flaky test rate" and "test effectiveness" metrics, plus anti-metrics to avoid (100% coverage, test count)
+
+- **Dual Subagent Code Review Workflow** (code-review.md)
+  - **Dual Subagent Review Workflow**: Two independent subagents perform full reviews in parallel for 85-95% issue coverage (vs 60-70% with single reviewer)
+  - **Subagent Invocation Protocol**: Step-by-step protocol for launching 2 independent subagents with identical scope, parallel execution, and structured output format
+  - **Finding Merge Protocol**: Deduplication algorithm for identical findings, prioritization by severity, grouping by file, and summary generation
+  - **Iterative Review Loop**: Complete loop structure with pseudocode for re-launching subagents after user fixes, tracking iteration state, and comparing progress
+  - **Termination Criteria**: Clear rules for when to stop (0 P1/P2 issues, max 3 iterations, or diminishing returns) with concrete examples of each termination scenario
+  - **Updated Workflow Steps (1-9)**: Complete workflow incorporating dual subagent review, iterative fixes, and convergence detection
+  - **Example Subagent Prompts**: Three complete prompt templates for default review, branch-to-branch review, and PR review with structured output requirements
+
+### Changed
+
+- **Testing Guidelines** (testing.md)
+  - Strengthened "Mock Abuse" section with additional warnings about mock-heavy tests providing false confidence
+  - Added emphasis on integration tests over heavily mocked unit tests
+  - Enhanced examples throughout to show real bug-finding scenarios
+
+- **Code Review Guidelines** (code-review.md)
+  - Completely restructured workflow to support dual subagent review
+  - Updated "Example User Interactions" to reflect new iterative workflow
+  - Added pseudocode implementation showing complete dual subagent review process
+
+### Philosophy Updates
+
+- **Testing Focus**: Shift from "test to pass" to "test to find bugs" - tests should catch real issues (race conditions, integration failures), not verify mock behavior
+- **Review Redundancy**: Dual independent reviews provide maximum issue coverage by eliminating blind spots through independent perspectives
+- **Iterative Improvement**: Code review is now a loop, not a one-time check - fix, re-review, repeat until convergence
+
 ## [2.3.0] - 2026-02-11
 
 ### Added
