@@ -4,6 +4,49 @@
 
 **Test behavior, not implementation.** Tests should verify what the code does, not how it does it.
 
+## Test-First Recommendation
+
+**Prefer test-first development (TDD) where it makes sense:**
+
+Write failing test → Write minimal code to pass → Verify → Commit
+
+### When to Use Test-First
+
+- New business logic and domain rules
+- API endpoints with clear contracts
+- Data validation and transformation
+- Algorithms and calculations
+- Bug fixes (write failing test first)
+
+**Example:**
+```python
+# 1. Write failing test
+def test_calculate_discount_gold_tier():
+    customer = Customer(tier="gold", purchase_count=10)
+    discount = calculate_discount(customer, amount=100)
+    assert discount == 15  # 15% off
+
+# 2. Watch it fail (pytest shows red)
+# 3. Write minimal code
+def calculate_discount(customer, amount):
+    if customer.tier == "gold" and customer.purchase_count >= 10:
+        return amount * 0.15
+    return 0
+
+# 4. Watch it pass (pytest shows green)
+# 5. Commit
+```
+
+### When Test-After is Acceptable
+
+- Exploratory work or research spikes
+- One-off scripts and utilities
+- Configuration changes
+- When behavior is already proven (e.g., integrating existing library)
+- Refactoring where tests already exist
+
+**Key:** Maintain the "verify-first" principle - prove code works before building on it.
+
 ## What to Test
 
 ### Always Test

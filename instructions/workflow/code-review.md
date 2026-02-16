@@ -208,12 +208,13 @@ For each issue:
 - [ ] Testing: New code has tests, tests follow testing.md
 - [ ] Style: Ruff compliance, naming conventions
 - [ ] Architecture: Consistent with existing patterns
+- [ ] Documentation: Updated if architecture changed, pruned if obsolete
 
 ### Skip If
 
 - File has no meaningful changes (whitespace only)
 - File is generated (lock files, auto-generated code)
-- File is documentation (README updates without code)
+- Documentation-only changes that improve clarity and remove obsolete content
 
 ## Review Constraints
 

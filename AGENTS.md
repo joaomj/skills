@@ -20,6 +20,7 @@ Instructions:
 |python-deps|When changing/adding Python dependencies, you MUST use `pdm` commands (e.g., `pdm add`), not directly edit `pyproject.toml`.
 |tech-context|MANDATORY: docs/tech-context.md is the Single-File Memory Bank consolidating Cline's core files. Reference: https://docs.cline.bot/prompting/cline-memory-bank#what-is-the-cline-memory-bank
 |ml-reporting|MANDATORY: ML projects must include a CRISP-DM Build Report in docs/tech-context.md. Each phase documented with STAR (Situation, Task, Action, Result) including how/why/what/where for all metrics and tradeoffs.
+|doc-maintenance|Review documentation for obsolete content during code reviews, after major refactors, or when explicitly asked. Remove outdated sections, keep detailed current state.
 
 ## Quality Checks|pre-commit-hooks
 Projects using these guidelines should enforce quality via pre-commit hooks:

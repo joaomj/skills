@@ -313,6 +313,76 @@ Why separate service:
 | Implementation details | These change frequently |
 | Internal refactoring notes | Use commit messages |
 
+## Documentation Maintenance
+
+**Principle: Informative, not bloated.**
+
+**Depth vs Bloat:**
+- **Depth** (good): Detailed explanations of CURRENT state, decisions, and tradeoffs
+- **Bloat** (bad): Accumulated outdated content, obsolete architecture, historical "how we got here"
+
+**When to Review and Prune:**
+- After major refactors or architectural changes
+- During code reviews (review documentation alongside code changes)
+- When explicitly requested by user
+- After completing features that modify documented workflows
+
+**Signs Documentation Needs Pruning:**
+
+| Sign | Example |
+|------|---------|
+| Contains old date references | "As of Q3 2023" when current doc is 2025 |
+| Describes non-existent components | Documents `AuthService` that was removed |
+| Mentions deprecated patterns | "We use" old API v2 |
+| Has historical sections | "How we migrated from X to Y in 2022" |
+| Data flow mismatch | Documented flow doesn't match actual implementation |
+
+**Removal Criteria:**
+Delete content that:
+- Documents removed features, components, or architecture
+- Contains "we used to do X" historical explanations
+- References deprecated APIs, libraries, or patterns
+- Includes outdated examples or code snippets
+- Describes workflows that no longer apply
+
+**Review Process:**
+1. Read entire documentation file
+2. Cross-reference with actual implementation
+3. Mark sections that don't match current state
+4. Delete obsolete content
+5. Update remaining content if needed
+
+**Example:**
+
+**Before (bloated):**
+```markdown
+## Authentication
+
+We used to use basic auth with session cookies (deprecated 2022). 
+Now we use JWT tokens stored in localStorage.
+
+### JWT Flow (current)
+1. User logs in
+2. Server returns JWT
+3. Client stores in localStorage
+
+### Old Session Flow (removed)
+[Historical section about 2021 implementation]
+```
+
+**After (lean):**
+```markdown
+## Authentication
+
+JWT-based authentication with localStorage persistence.
+
+### JWT Flow
+1. User POSTs /api/login with credentials
+2. Server validates and returns JWT (expires 24h)
+3. Client stores JWT in localStorage
+4. All API requests include `Authorization: Bearer <token>` header
+```
+
 ## No Proactive Docs
 
 **Rule:** Never create documentation files unless explicitly requested.

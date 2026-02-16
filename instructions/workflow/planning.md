@@ -93,8 +93,15 @@ Phrases that indicate approval:
 ### After Changes
 1. Report what was changed
 2. Report test results
-3. **Update docs/tech-context.md** if architecture changed
-4. Summarize tradeoffs made
+3. **Update docs/tech-context.md** if architecture changed:
+   - Add new content for new features/decisions
+   - Update existing content if it changed
+   - Remove obsolete content about old architecture
+4. **Review and prune documentation** if:
+   - Architecture or data flows changed significantly
+   - Removed/deprecated features or components
+   - Documentation mentions outdated patterns or APIs
+5. Summarize tradeoffs made
 
 ## Investigation Tools
 
