@@ -35,6 +35,14 @@ All notable changes to the OpenCode Agent Guidelines.
   - Completely restructured workflow to support dual subagent review
   - Updated "Example User Interactions" to reflect new iterative workflow
   - Added pseudocode implementation showing complete dual subagent review process
+  - **P0 Severity Level**: Added P0 (Critical) for "must block merge" issues (security vulnerabilities, data loss risk, correctness bugs)
+  - **SOLID Checklists**: Added comprehensive sections for SRP, OCP, LSP, ISP, DIP with detection prompts and refactor heuristics
+  - **Race Conditions**: Added detailed coverage including shared state, check-then-act (TOCTOU), database concurrency, and distributed systems
+  - **Boundary Conditions**: Added checklist for null/undefined handling, empty collections, numeric boundaries, and string boundaries
+  - **Removal Planning**: Added template for safe vs deferred deletion with priority levels and verification steps
+  - **Enhanced Security**: Added JWT & token security, supply chain & dependencies, CORS & headers, and ReDoS patterns
+  - **Preflight Edge Cases**: Added handling for no changes, large diff (>500 lines), and mixed concerns
+  - **Next Steps Confirmation**: Added explicit options after review presentation (Fix all, Fix P0/P1 only, Fix specific items, No changes)
 
 ### Philosophy Updates
 

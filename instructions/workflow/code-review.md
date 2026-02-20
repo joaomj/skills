@@ -26,6 +26,7 @@ Trigger via natural language requests (OpenCode has built-in `/review` command):
 
 | Level | Category | Examples | Action Required |
 |-------|----------|----------|-----------------|
+| **P0** | Critical | Security vulnerability, data loss risk, correctness bug, broken contract | MUST block merge |
 | **P1** | Critical | Security bugs, data loss, logic errors, broken contracts, secret exposure | MUST fix before merge |
 | **P2** | Important | Performance issues, missing error handling, poor maintainability, architectural violations | SHOULD fix, requires justification if skipped |
 | **P3** | Nice to have | Style inconsistencies, minor optimizations, missing comments, naming suggestions | COULD fix, reviewer discretion |
@@ -66,6 +67,7 @@ Create `CODE_REVIEW.md` at project root with this structure:
 
 | Priority | Count |
 |----------|-------|
+| P0 (Critical) | 1 |
 | P1 (Critical) | 2 |
 | P2 (Important) | 5 |
 | P3 (Nice) | 3 |
@@ -74,7 +76,7 @@ Create `CODE_REVIEW.md` at project root with this structure:
 
 ## File: src/payments/processor.py
 
-### P1: SQL Injection Risk (Line 45)
+### P0: SQL Injection Risk (Line 45)
 
 **Issue:** User input directly interpolated into SQL query
 ```python
@@ -89,7 +91,7 @@ cursor.execute(query, (user_id,))  # ✅
 
 ---
 
-### P2: Missing Error Handling (Line 78)
+### P1: Missing Error Handling (Line 78)
 
 **Issue:** Stripe API call without try/catch
 ```python
@@ -135,7 +137,7 @@ def process_data(data):
 
 ## Action Items
 
-### Must Fix (P1)
+### Must Fix (P0/P1)
 1. [ ] Fix SQL injection in src/payments/processor.py:45
 2. [ ] Remove hardcoded API key in src/config/settings.py:12
 
@@ -150,7 +152,33 @@ def process_data(data):
 3. [ ] Consider caching for frequent query
 ```
 
+## Next Steps
+
+After presenting the review findings, ask the user how to proceed:
+
+```
+I found X issues (P0: _, P1: _, P2: _, P3: _).
+
+How would you like to proceed?
+
+1. Fix all - I'll implement all suggested fixes
+2. Fix P0/P1 only - Address critical and high priority issues
+3. Fix specific items - Tell me which issues to fix
+4. No changes - Review complete, no implementation needed
+```
+
+**Important**: Do NOT implement any changes until user explicitly confirms. This is a review-first workflow.
+
 ## Review Process
+
+### Step 0: Preflight Context
+
+Use `git status -sb`, `git diff --stat`, and `git diff` to scope changes.
+
+**Edge cases:**
+- **No changes**: If `git diff` is empty, inform user and ask if they want to review staged changes or a specific commit range.
+- **Large diff (>500 lines)**: Summarize by file first, then review in batches by module/feature area.
+- **Mixed concerns**: Group findings by logical feature, not just file order.
 
 ### Step 1: Get Diff Information
 
@@ -201,20 +229,291 @@ For each issue:
 
 ### Always Check
 
-- [ ] Security: No secrets, no injection risks, proper auth
-- [ ] Error handling: Try/catch where needed, proper error propagation
-- [ ] Type safety: Type hints, Pydantic validation
-- [ ] Performance: N+1 queries, unnecessary loops, large data loading
-- [ ] Testing: New code has tests, tests follow testing.md
-- [ ] Style: Ruff compliance, naming conventions
-- [ ] Architecture: Consistent with existing patterns
-- [ ] Documentation: Updated if architecture changed, pruned if obsolete
+- [ ] **Security: Input/Output Safety**
+  - [ ] No XSS risks (unsafe HTML injection, unescaped templates, innerHTML assignments)
+  - [ ] No injection attacks (SQL/NoSQL/command/GraphQL injection via string concatenation)
+  - [ ] No SSRF (user-controlled URLs reaching internal services without allowlist)
+  - [ ] No path traversal (user input in file paths without sanitization)
+  - [ ] No prototype pollution (unsafe object merging with user input)
+
+- [ ] **Security: AuthN/AuthZ**
+  - [ ] Missing tenant or ownership checks for read/write operations
+  - [ ] New endpoints without auth guards or RBAC enforcement
+  - [ ] Trusting client-provided roles/flags/IDs
+  - [ ] Broken access control (IDOR - Insecure Direct Object Reference)
+
+- [ ] **Security: JWT & Token Security**
+  - [ ] Algorithm confusion attacks (accepting `none` or wrong algorithm)
+  - [ ] Weak or hardcoded secrets
+  - [ ] Missing expiration (`exp`) or not validating it
+  - [ ] Sensitive data in JWT payload (tokens are base64, not encrypted)
+  - [ ] Not validating `iss` (issuer) or `aud` (audience)
+
+- [ ] **Security: Secrets and PII**
+  - [ ] API keys, tokens, or credentials in code/config/logs
+  - [ ] Secrets in git history or environment variables exposed to client
+  - [ ] Excessive logging of PII or sensitive payloads
+  - [ ] Missing data masking in error messages
+
+- [ ] **Security: Supply Chain & Dependencies**
+  - [ ] Unpinned dependencies allowing malicious updates
+  - [ ] Dependency confusion (private package name collision)
+  - [ ] Importing from untrusted sources or CDNs without integrity checks
+  - [ ] Outdated dependencies with known CVEs
+
+- [ ] **Security: CORS & Headers**
+  - [ ] Overly permissive CORS (`Access-Control-Allow-Origin: *` with credentials)
+  - [ ] Missing security headers (CSP, X-Frame-Options, X-Content-Type-Options)
+  - [ ] Exposed internal headers or stack traces
+
+- [ ] **Security: Cryptography**
+  - [ ] Weak algorithms (MD5, SHA1 for security purposes)
+  - [ ] Hardcoded IVs or salts
+  - [ ] Using encryption without authentication (ECB mode, no HMAC)
+  - [ ] Insufficient key length
+
+- [ ] **Security: Runtime Risks**
+  - [ ] Unbounded loops, recursive calls, or large in-memory buffers
+  - [ ] Missing timeouts, retries, or rate limiting on external calls
+  - [ ] Blocking operations on request path (sync I/O in async context)
+  - [ ] Resource exhaustion (file handles, connections, memory)
+  - [ ] ReDoS (Regular Expression Denial of Service)
+
+- [ ] **Security: Race Conditions**
+  - [ ] Shared state access without synchronization
+  - [ ] Check-then-act (TOCTOU) patterns
+  - [ ] Database concurrency issues (missing locks)
+  - [ ] Distributed system race conditions
+
+- [ ] **Error handling**: Try/catch where needed, proper error propagation
+- [ ] **Type safety**: Type hints, Pydantic validation
+- [ ] **Performance**: N+1 queries, unnecessary loops, large data loading
+- [ ] **Testing**: New code has tests, tests follow testing.md
+- [ ] **Style**: Ruff compliance, naming conventions
+- [ ] **Architecture**: Consistent with existing patterns
+- [ ] **Documentation**: Updated if architecture changed, pruned if obsolete
 
 ### Skip If
 
 - File has no meaningful changes (whitespace only)
 - File is generated (lock files, auto-generated code)
 - Documentation-only changes that improve clarity and remove obsolete content
+
+## SOLID Principles Checklist
+
+### SRP (Single Responsibility)
+
+- File owns unrelated concerns (e.g., HTTP + DB + domain rules in one file)
+- Large class/module with low cohesion or multiple reasons to change
+- Functions that orchestrate many unrelated steps
+- God objects that know too much about the system
+- **Ask**: "What is the single reason this module would change?"
+
+### OCP (Open/Closed)
+
+- Adding a new behavior requires editing many switch/if blocks
+- Feature growth requires modifying core logic rather than extending
+- No plugin/strategy/hook points for variation
+- **Ask**: "Can I add a new variant without touching existing code?"
+
+### LSP (Liskov Substitution)
+
+- Subclass checks for concrete type or throws for base method
+- Overridden methods weaken preconditions or strengthen postconditions
+- Subclass ignores or no-ops parent behavior
+- **Ask**: "Can I substitute any subclass without the caller knowing?"
+
+### ISP (Interface Segregation)
+
+- Interfaces with many methods, most unused by implementers
+- Callers depend on broad interfaces for narrow needs
+- Empty/stub implementations of interface methods
+- **Ask**: "Do all implementers use all methods?"
+
+### DIP (Dependency Inversion)
+
+- High-level logic depends on concrete IO, storage, or network types
+- Hard-coded implementations instead of abstractions or injection
+- Import chains that couple business logic to infrastructure
+- **Ask**: "Can I swap the implementation without changing business logic?"
+
+## Common Code Smells (Beyond SOLID)
+
+| Smell | Signs |
+|-------|-------|
+| **Long method** | Function > 30 lines, multiple levels of nesting |
+| **Feature envy** | Method uses more data from another class than its own |
+| **Data clumps** | Same group of parameters passed together repeatedly |
+| **Primitive obsession** | Using strings/numbers instead of domain types |
+| **Shotgun surgery** | One change requires edits across many files |
+| **Divergent change** | One file changes for many unrelated reasons |
+| **Dead code** | Unreachable or never-called code |
+| **Speculative generality** | Abstractions for hypothetical future needs |
+| **Magic numbers/strings** | Hardcoded values without named constants |
+
+## Refactor Heuristics
+
+1. **Split by responsibility, not by size** - A small file can still violate SRP
+2. **Introduce abstraction only when needed** - Wait for the second use case
+3. **Keep refactors incremental** - Isolate behavior before moving
+4. **Preserve behavior first** - Add tests before restructuring
+5. **Name things by intent** - If naming is hard, the abstraction might be wrong
+6. **Prefer composition over inheritance** - Inheritance creates tight coupling
+7. **Make illegal states unrepresentable** - Use types to enforce invariants
+
+## Boundary Conditions Checklist
+
+### Null/Undefined Handling
+
+- **Missing null checks**: Accessing properties on potentially null objects
+- **Truthy/falsy confusion**: `if (value)` when `0` or `""` are valid
+- **Optional chaining overuse**: `a?.b?.c?.d` hiding structural issues
+- **Null vs undefined inconsistency**: Mixed usage without clear convention
+
+### Empty Collections
+
+- **Empty array not handled**: Code assumes array has items
+- **Empty object edge case**: `for...in` or `Object.keys` on empty object
+- **First/last element access**: `arr[0]` or `arr[arr.length-1]` without length check
+
+### Numeric Boundaries
+
+- **Division by zero**: Missing check before division
+- **Integer overflow**: Large numbers exceeding safe integer range
+- **Floating point comparison**: Using `===` instead of epsilon comparison
+- **Negative values**: Index or count that shouldn't be negative
+- **Off-by-one errors**: Loop bounds, array slicing, pagination
+
+### String Boundaries
+
+- **Empty string**: Not handled as edge case
+- **Whitespace-only string**: Passes truthy check but is effectively empty
+- **Very long strings**: No length limits causing memory/display issues
+- **Unicode edge cases**: Emoji, RTL text, combining characters
+
+### Common Patterns to Flag
+
+```python
+# Dangerous: no null check
+name = user.profile.name
+
+# Dangerous: array access without check
+first = items[0]
+
+# Dangerous: division without check
+avg = total / count
+
+# Dangerous: truthy check excludes valid values
+if value:  # fails for 0, "", False
+    ...
+```
+
+### Questions to Ask
+
+- "What if this is null/undefined?"
+- "What if this collection is empty?"
+- "What's the valid range for this number?"
+- "What happens at the boundaries (0, -1, MAX_INT)?"
+
+## Removal and Deletion Planning
+
+### Priority Levels for Removal
+
+- [ ] **P0**: Immediate removal needed (security risk, significant cost, blocking other work)
+- [ ] **P1**: Remove in current sprint
+- [ ] **P2**: Backlog / next iteration
+
+### Safe to Remove Now
+
+**Field** | **Details**
+---------|----------
+**Location** | `path/to/file.py:line`
+**Rationale** | Why this should be removed
+**Evidence** | Unused (no references), dead feature flag, deprecated API
+**Impact** | None / Low - no active consumers
+**Deletion steps** | 1. Remove code 2. Remove tests 3. Remove config
+**Verification** | Run tests, check no runtime errors, monitor logs
+
+### Defer Removal (Plan Required)
+
+**Field** | **Details**
+---------|----------
+**Location** | `path/to/file.py:line`
+**Why defer** | Active consumers, needs migration, stakeholder sign-off
+**Preconditions** | Feature flag off for 2 weeks, telemetry shows 0 usage
+**Breaking changes** | List any API/contract changes
+**Migration plan** | Steps for consumers to migrate
+**Timeline** | Target date or sprint
+**Owner** | Person/team responsible
+**Validation** | Metrics to confirm safe removal (error rates, usage counts)
+**Rollback plan** | How to restore if issues found
+
+### Checklist Before Removal
+
+- [ ] Searched codebase for all references (`rg`, `grep`)
+- [ ] Checked for dynamic/reflection-based usage
+- [ ] Verified no external consumers (APIs, SDKs, docs)
+- [ ] Feature flag telemetry reviewed (if applicable)
+- [ ] Tests updated/removed
+- [ ] Documentation updated
+- [ ] Team notified (if shared code)
+
+## Race Conditions Checklist
+
+### Shared State Access
+
+- Multiple threads/goroutines/async tasks accessing shared variables without synchronization
+- Global state or singletons modified concurrently
+- Lazy initialization without proper locking (double-checked locking issues)
+- Non-thread-safe collections used in concurrent context
+
+### Check-Then-Act (TOCTOU)
+
+- `if (exists) then use` patterns without atomic operations
+- `if (authorized) then perform` where authorization can change
+- File existence check followed by file operation
+- Balance check followed by deduction (financial operations)
+- Inventory check followed by order placement
+
+### Database Concurrency
+
+- Missing optimistic locking (`version` column, `updated_at` checks)
+- Missing pessimistic locking (`SELECT FOR UPDATE`)
+- Read-modify-write without transaction isolation
+- Counter increments without atomic operations (`UPDATE SET count = count + 1`)
+- Unique constraint violations in concurrent inserts
+
+### Distributed Systems
+
+- Missing distributed locks for shared resources
+- Leader election race conditions
+- Cache invalidation races (stale reads after writes)
+- Event ordering dependencies without proper sequencing
+- Split-brain scenarios in cluster operations
+
+### Common Patterns to Flag
+
+```python
+# Dangerous: TOCTOU
+if not exists(key):
+    create(key)
+
+# Dangerous: Read-modify-write
+value = get(key)
+value += 1
+set(key, value)
+
+# Dangerous: Check-then-act
+if user.balance >= amount:
+    user.balance -= amount
+```
+
+### Questions to Ask
+
+- "What happens if two requests hit this code simultaneously?"
+- "Is this operation atomic or can it be interrupted?"
+- "What shared state does this code access?"
+- "How does this behave under high concurrency?"
 
 ## Review Constraints
 
@@ -256,16 +555,68 @@ git diff --name-status origin/main...HEAD
 git diff --stat origin/main...HEAD
 ```
 
+## Preflight Edge Cases
+
+### No Changes
+
+When `git diff` returns no output:
+- Inform user that no changes are detected
+- Ask if they want to review staged changes: `git diff --staged`
+- Ask if they want to review a specific commit range
+- Ask if they want to review a different branch
+
+### Large Diff (>500 lines)
+
+When diff exceeds 500 lines:
+- First, present summary by file: `git diff --stat`
+- Group files by module or feature area
+- Review in batches, presenting findings incrementally
+- Allow user to prioritize which files to review first
+
+Example output:
+```
+Large diff detected (1,247 lines changed across 23 files).
+
+Files by module:
+- Payment processing: 6 files (450 lines)
+- User authentication: 4 files (320 lines)
+- API routes: 8 files (280 lines)
+- Utils/helpers: 5 files (197 lines)
+
+Reviewing in batches by module to provide focused feedback...
+```
+
+### Mixed Concerns
+
+When changes span multiple unrelated areas:
+- Group findings by logical feature, not just file order
+- Create separate sections in CODE_REVIEW.md for each feature
+- Ensure user can see the complete picture for each feature
+
+Example structure:
+```
+## Feature: Payment Processing
+- src/payments/processor.py
+- src/models/payment.py
+- tests/test_payment.py
+
+## Feature: User Authentication
+- src/auth/validator.py
+- src/middleware/auth.py
+```
+
 ## Workflow
 
-1. Determine review scope (default or user-specified)
-2. Run git commands to get change information
-3. For each changed file with issues:
+1. **Preflight**: Scope changes via `git diff`, handle edge cases
+2. Determine review scope (default or user-specified)
+3. Run git commands to get change information
+4. For each changed file with issues:
    - Identify problems by priority
    - Write suggested fixes
-4. Create CODE_REVIEW.md at project root
-5. Report to user: "Created CODE_REVIEW.md at {path} with X P1, Y P2, Z P3 issues"
-6. Do NOT commit the review file
+5. Create CODE_REVIEW.md at project root
+6. Present review with next steps options
+7. Wait for user confirmation before implementing any fixes
+8. Do NOT commit the review file
 
 ## Dual Subagent Review Workflow
 
@@ -311,7 +662,7 @@ Review all changed files for:
 For each issue found:
 - Provide file path and line number
 - Explain why it's an issue
-- Categorize as P1/P2/P3
+- Categorize as P0/P1/P2/P3
 - Suggest a fix (code example)
 
 Return a structured list of all issues found.
@@ -325,14 +676,15 @@ subagent_2 = Task(
 Perform a comprehensive code review of changes from {source} to {target}.
 
 Review all changed files for:
-1. P1 Issues: Security bugs, data loss, logic errors, broken contracts, secret exposure
-2. P2 Issues: Performance issues, missing error handling, poor maintainability
-3. P3 Issues: Style inconsistencies, minor optimizations
+1. P0 Issues: Security vulnerabilities, data loss risk, correctness bugs
+2. P1 Issues: Security bugs, data loss, logic errors, broken contracts, secret exposure
+3. P2 Issues: Performance issues, missing error handling, poor maintainability
+4. P3 Issues: Style inconsistencies, minor optimizations
 
 For each issue found:
 - Provide file path and line number
 - Explain why it's an issue
-- Categorize as P1/P2/P3
+- Categorize as P0/P1/P2/P3
 - Suggest a fix (code example)
 
 Return a structured list of all issues found.
@@ -445,7 +797,7 @@ def deduplicate_issues(issues_list: List[List[Issue]]) -> List[Issue]:
 Sort merged issues by priority:
 
 ```python
-SEVERITY_ORDER = {"P1": 0, "P2": 1, "P3": 2}
+SEVERITY_ORDER = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
 
 def prioritize_issues(issues: List[Issue]) -> List[Issue]:
     return sorted(issues, key=lambda x: (SEVERITY_ORDER[x["severity"]], x["file"], x["line"]))
@@ -471,7 +823,7 @@ Calculate totals:
 
 ```python
 def generate_summary(issues: List[Issue]) -> Dict[str, int]:
-    summary = {"P1": 0, "P2": 0, "P3": 0}
+    summary = {"P0": 0, "P1": 0, "P2": 0, "P3": 0}
     for issue in issues:
         summary[issue["severity"]] += 1
     return summary
@@ -559,7 +911,7 @@ create_code_review(merged_issues, iteration=1)
 
 #### User Fixes Issues
 
-User fixes P1 and P2 issues based on review.
+User fixes P0, P1, and P2 issues based on review.
 
 #### Iteration 2: Verify Fixes
 
@@ -580,7 +932,7 @@ create_code_review(merged_issues_v2, iteration=2)
 
 #### Iteration 3+: Continue Until Convergence
 
-Repeat until no P1/P2 issues remain or max iterations reached.
+Repeat until no P0/P1/P2 issues remain or max iterations reached.
 
 ### Tracking Iteration State
 
@@ -589,15 +941,17 @@ class ReviewIteration:
     def __init__(self, iteration_number: int, issues: List[Issue]):
         self.number = iteration_number
         self.issues = issues
+        self.p0_count = sum(1 for i in issues if i["severity"] == "P0")
         self.p1_count = sum(1 for i in issues if i["severity"] == "P1")
         self.p2_count = sum(1 for i in issues if i["severity"] == "P2")
         self.p3_count = sum(1 for i in issues if i["severity"] == "P3")
     
     def has_critical_issues(self) -> bool:
-        return self.p1_count > 0 or self.p2_count > 0
+        return self.p0_count > 0 or self.p1_count > 0 or self.p2_count > 0
     
     def progress(self, previous: "ReviewIteration") -> Dict[str, int]:
         return {
+            "P0_fixed": previous.p0_count - self.p0_count,
             "P1_fixed": previous.p1_count - self.p1_count,
             "P2_fixed": previous.p2_count - self.p2_count,
             "P3_fixed": previous.p3_count - self.p3_count,
@@ -608,7 +962,7 @@ class ReviewIteration:
 
 ### Stop When
 
-1. **Zero Critical Issues**: No P1 or P2 issues remain (P3 issues acceptable)
+1. **Zero Critical Issues**: No P0 or P1 issues remain (P2/P3 issues acceptable)
 2. **Max Iterations Reached**: 3 iterations completed (prevents infinite loop)
 3. **Diminishing Returns**: Issues stopped being fixed between iterations
 
@@ -617,24 +971,24 @@ class ReviewIteration:
 ```python
 def should_terminate(iterations: List[ReviewIteration]) -> Tuple[bool, str]:
     latest = iterations[-1]
-    
+
     # Check 1: No critical issues
     if not latest.has_critical_issues():
-        return (True, "Converged: No P1 or P2 issues remain")
-    
+        return (True, "Converged: No P0, P1, or P2 issues remain")
+
     # Check 2: Max iterations
     if len(iterations) >= 3:
         return (True, "Terminated: Reached maximum 3 iterations")
-    
+
     # Check 3: Diminishing returns (no progress from last iteration)
     if len(iterations) >= 2:
         prev = iterations[-2]
         latest = iterations[-1]
         progress = latest.progress(prev)
-        
+
         if all(v == 0 for v in progress.values()):
             return (True, "Terminated: No progress in last iteration")
-    
+
     # Continue loop
     return (False, "Continue: Critical issues remain")
 ```
@@ -644,39 +998,39 @@ def should_terminate(iterations: List[ReviewIteration]) -> Tuple[bool, str]:
 #### Example 1: Successful Convergence
 
 ```
-Iteration 1: 3 P1, 5 P2, 2 P3
-→ User fixes all P1 and 3 P2
+Iteration 1: 1 P0, 3 P1, 5 P2, 2 P3
+→ User fixes all P0, P1 and 3 P2
 
-Iteration 2: 0 P1, 2 P2, 4 P3
+Iteration 2: 0 P0, 0 P1, 2 P2, 4 P3
 → User fixes remaining 2 P2
 
-Iteration 3: 0 P1, 0 P2, 3 P3
+Iteration 3: 0 P0, 0 P1, 0 P2, 3 P3
 → TERMINATED: No critical issues remain
 ```
 
 #### Example 2: Max Iterations
 
 ```
-Iteration 1: 2 P1, 4 P2, 1 P3
-→ User fixes P1 issues, 2 P2
+Iteration 1: 1 P0, 2 P1, 4 P2, 1 P3
+→ User fixes P0, P1 issues, 2 P2
 
-Iteration 2: 0 P1, 2 P2, 2 P3
+Iteration 2: 0 P0, 0 P1, 2 P2, 2 P3
 → User fixes 1 P2
 
-Iteration 3: 0 P1, 1 P2, 2 P3
+Iteration 3: 0 P0, 0 P1, 1 P2, 2 P3
 → TERMINATED: Reached maximum 3 iterations (1 P2 remains)
 ```
 
 #### Example 3: Diminishing Returns
 
 ```
-Iteration 1: 1 P1, 3 P2, 5 P3
-→ User fixes P1
+Iteration 1: 1 P0, 1 P1, 3 P2, 5 P3
+→ User fixes P0, P1
 
-Iteration 2: 0 P1, 3 P2, 5 P3
+Iteration 2: 0 P0, 0 P1, 3 P2, 5 P3
 → User reports P2 issues are false positives
 
-Iteration 3: 0 P1, 3 P2, 5 P3
+Iteration 3: 0 P0, 0 P1, 3 P2, 5 P3
 → TERMINATED: No progress in last iteration
 ```
 
@@ -684,90 +1038,107 @@ Iteration 3: 0 P1, 3 P2, 5 P3
 
 ### Complete Dual Subagent Workflow
 
-1. **Determine Review Scope**
+1. **Preflight Context**
+   - Scope changes via `git diff`, `git status -sb`, `git diff --stat`
+   - Handle edge cases: no changes, large diff (>500 lines), mixed concerns
+
+2. **Determine Review Scope**
    - Get review scope from user or use default (origin/main...HEAD)
    - Run git commands to gather diff information
 
-2. **Launch 2 Independent Subagents**
-   - Subagent 1: Full review of all changes
+3. **Launch 2 Independent Subagents**
+   - Subagent 1: Full review of all changes (P0-P3)
    - Subagent 2: Full review of all changes (independent, parallel)
    - Both receive identical scope instructions
 
-3. **Wait for Subagent Completion**
+4. **Wait for Subagent Completion**
    - Both subagents complete their reviews
    - Receive structured issue lists from each
 
-4. **Merge Findings**
+5. **Merge Findings**
    - Deduplicate identical issues
-   - Prioritize by severity (P1 > P2 > P3)
+   - Prioritize by severity (P0 > P1 > P2 > P3)
    - Group by file for review document
 
-5. **Generate Review Document**
+6. **Generate Review Document**
    - Create CODE_REVIEW.md with merged findings
-   - Include summary of P1/P2/P3 counts
-   - Present to user with action items
+   - Include summary of P0/P1/P2/P3 counts
+   - Present to user with action items and next steps
 
-6. **Wait for User Fixes**
-   - User reviews and fixes issues
+7. **Present Next Steps Options**
+   - Fix all - Implement all suggested fixes
+   - Fix P0/P1 only - Address critical and high priority issues
+   - Fix specific items - User selects which issues to fix
+   - No changes - Review complete, no implementation needed
+
+8. **Wait for User Confirmation and Fixes**
+   - User selects option and confirms
+   - If fixes selected, user implements fixes
    - Commit fixes to branch
 
-7. **Re-Launch Subagents** (if iteration < 3)
+9. **Re-Launch Subagents** (if iteration < 3)
    - Launch 2 subagents again with same scope
    - Review the new code after fixes
 
-8. **Check Termination Criteria**
-   - If 0 P1/P2 issues: Create final CODE_REVIEW.md and stop
-   - If iteration >= 3: Create final CODE_REVIEW.md and stop
-   - If no progress: Create final CODE_REVIEW.md and stop
-   - Otherwise: Go to step 5 (present new iteration)
+10. **Check Termination Criteria**
+    - If 0 P0/P1/P2 issues: Create final CODE_REVIEW.md and stop
+    - If iteration >= 3: Create final CODE_REVIEW.md and stop
+    - If no progress: Create final CODE_REVIEW.md and stop
+    - Otherwise: Go to step 6 (present new iteration)
 
-9. **Final Report**
-   - Create final CODE_REVIEW.md with all remaining issues
-   - Include iteration history showing progress
-   - Report to user: "Final review with X P1, Y P2, Z P3 issues after 3 iterations"
+11. **Final Report**
+    - Create final CODE_REVIEW.md with all remaining issues
+    - Include iteration history showing progress
+    - Report to user: "Final review with X P0, Y P1, Z P2, W P3 issues after 3 iterations"
 
 ### Pseudocode Implementation
 
 ```python
 def dual_subagent_review(review_scope: ReviewScope):
     iterations = []
-    
+
     for iteration_num in range(1, 4):  # Max 3 iterations
         # Step 1: Launch 2 subagents
         issues_1 = subagent_1.review(scope=review_scope)
         issues_2 = subagent_2.review(scope=review_scope)
-        
+
         # Step 2: Merge findings
         merged_issues = merge_and_deduplicate([issues_1, issues_2])
         prioritized_issues = prioritize_issues(merged_issues)
-        
+
         # Step 3: Record iteration
         iteration = ReviewIteration(iteration_num, prioritized_issues)
         iterations.append(iteration)
-        
+
         # Step 4: Generate review document
         create_code_review(iteration, iterations)
-        
-        # Step 5: Check termination
+
+        # Step 5: Present next steps options
+        next_step = present_next_steps(iteration)
+        if next_step == "no_changes":
+            break
+
+        # Step 6: Check termination before waiting for fixes
         should_stop, reason = should_terminate(iterations)
-        
+
         if should_stop:
             print(f"{reason} (after {iteration_num} iterations)")
             break
-        
-        # Step 6: Wait for user fixes
-        print(f"Iteration {iteration_num}: {iteration.p1_count} P1, {iteration.p2_count} P2")
+
+        # Step 7: Wait for user fixes
+        print(f"Iteration {iteration_num}: {iteration.p0_count} P0, {iteration.p1_count} P1, {iteration.p2_count} P2")
         print("Please fix the issues above, then continue.")
         input("Press Enter when fixes are ready...")
-        
+
         # Note: In actual agent workflow, this would be:
         # - Present issues to user
+        # - Present next steps options
         # - Wait for user to implement fixes
         # - Continue to next iteration
-    
+
     # Final summary
     final = iterations[-1]
-    print(f"Final review: {final.p1_count} P1, {final.p2_count} P2, {final.p3_count} P3")
+    print(f"Final review: {final.p0_count} P0, {final.p1_count} P1, {final.p2_count} P2, {final.p3_count} P3")
     return iterations
 ```
 
@@ -786,6 +1157,16 @@ For each file with changes:
 1. Read the diff to understand what changed
 2. Read the full file context if needed
 3. Check against these criteria:
+
+Priority P0 (Critical - MUST BLOCK MERGE):
+- Security vulnerabilities: XSS, injection, SSRF, race conditions, auth bypass
+- Data loss risk: Unintended deletions, data corruption
+- Correctness bugs: Broken business logic, incorrect algorithms, broken contracts
+
+Priority P0 (Critical - MUST BLOCK MERGE):
+- Security vulnerabilities: XSS, injection, SSRF, race conditions, auth bypass
+- Data loss risk: Unintended deletions, data corruption
+- Correctness bugs: Broken business logic, incorrect algorithms, broken contracts
 
 Priority P1 (Critical - MUST FIX):
 - Security bugs: SQL injection, XSS, secret exposure, auth bypass
@@ -806,7 +1187,7 @@ Priority P3 (Nice to Have - COULD FIX):
 
 For each issue found:
 - File path and line number
-- Severity (P1/P2/P3)
+- Severity (P0/P1/P2/P3)
 - Brief description of the issue
 - Why it's a problem (1-2 sentences)
 - Suggested fix (code example if applicable)
@@ -846,7 +1227,8 @@ Run this command: git diff feature-authentication...develop
 Review all changed files for bugs, security issues, and code quality.
 
 Categorize each issue as:
-- P1: Critical bugs, security issues, data loss risks
+- P0: Critical - Security vulnerability, data loss risk, correctness bug (must block merge)
+- P1: Critical - Security bugs, data loss risks
 - P2: Performance issues, missing error handling
 - P3: Style inconsistencies, minor optimizations
 
@@ -866,7 +1248,7 @@ First, fetch PR information:
 
 Review all changes from the PR's head branch to its base branch.
 
-Identify and categorize issues as P1, P2, or P3.
+Identify and categorize issues as P0 (critical), P1, P2, or P3.
 
 Return a structured list of all findings with file paths, line numbers, and suggested fixes.
 ```
